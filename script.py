@@ -1,5 +1,12 @@
-import cupy as cp
+
 from tqdm import tqdm
+
+import cupy as cp
+
+if cp.cuda.runtime.getDeviceCount() == 0:
+    raise RuntimeError("No GPU device found. Please check your CUDA environment.")
+else:
+    print(f"Detected {cp.cuda.runtime.getDeviceCount()} GPU(s).")
 
 def find_numbers(limit, threshold):
     # 使用 GPU 生成所有平方数
