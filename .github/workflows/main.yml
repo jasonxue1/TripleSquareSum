@@ -1,4 +1,4 @@
-name: Triple Square Sum Finder
+name: Triple Square Sum Finder (GPU)
 
 on:
   workflow_dispatch: # 手动触发执行
@@ -9,7 +9,6 @@ on:
 jobs:
   calculate:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -19,8 +18,14 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install NVIDIA Drivers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nvidia-driver-470
+
+      - name: Install Python dependencies
+        run: |
+          pip install cupy tqdm
 
       - name: Run the Python script
         run: python script.py
