@@ -14,20 +14,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install NVIDIA Drivers
+      - name: Install NVIDIA Drivers and Toolkit
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential dkms
           distribution=$(. /etc/os-release; echo $ID$VERSION_ID) && \
-          curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - && \
-          curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+          curl -fsSL https://nvidia.github.io/nvidia-docker/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg && \
+          curl -fsSL https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+          sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
           sudo apt-get update
-          sudo apt-get install -y nvidia-driver-470
-          sudo reboot
+          sudo apt-get install -y nvidia-container-toolkit
+          sudo systemctl restart docker
 
-      - name: Install Python dependencies
+      - name: Verify NVIDIA Toolkit Installation
         run: |
-          pip install cupy-cuda11x tqdm  # 安装支持 CUDA 的 cupy 预编译版本
+          nvidia-smi || echo "NVIDIA driver is not working properly. Please check the installation."
 
-      - name: Run the Python script
-        run: python script.py
+      - name: Run GPU-accelerated Docker container
+        run: |
+          docker run --rm --gpus all \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace nvidia/cuda:11.8.0-base-ubuntu20.04 \
+          bash -c "apt update && apt install -y python3 python3-pip && pip3 install cupy tqdm && python3 script.py"
