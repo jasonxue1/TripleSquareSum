@@ -1,4 +1,4 @@
-name: Triple Square Sum Finder (GPU)
+name: Triple Square Sum Finder (Rust)
 
 on:
   workflow_dispatch: # 手动触发执行
@@ -7,13 +7,29 @@ on:
       - main
 
 jobs:
-  calculate:
-    runs-on: self-hosted  # 使用支持 GPU 的 Runner
+  build-and-run:
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run GPU-accelerated Python script
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable  # 安装稳定版 Rust 工具链
+          override: true
+
+      - name: Build the program
         run: |
-          pip install cupy tqdm
-          python script.py
+          cargo build --release
+
+      - name: Run the program
+        run: |
+          ./target/release/triple_square_sum > output.txt
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: square-sum-results
+          path: output.txt
