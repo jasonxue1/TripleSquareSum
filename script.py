@@ -1,13 +1,17 @@
-import numpy as np
+import cupy as cp
 from tqdm import tqdm
 
 def find_numbers(limit, threshold):
-    max_square = int(np.sqrt(limit)) + 1
-    squares = np.array([i**2 for i in range(1, max_square)])
+    # 使用 GPU 生成所有平方数
+    max_square = int(cp.sqrt(limit)) + 1
+    squares = cp.array([i**2 for i in range(1, max_square)])
 
     print(f"生成所有平方数，共计 {len(squares)} 个...")
-    counts = np.zeros(limit, dtype=np.int32)
-
+    
+    # 初始化计数数组
+    counts = cp.zeros(limit, dtype=cp.int32)
+    
+    # GPU 加速枚举 a, b, c 的组合
     for a in tqdm(range(len(squares)), desc="Processing"):
         for b in range(a, len(squares)):
             s_ab = squares[a] + squares[b]
@@ -19,8 +23,9 @@ def find_numbers(limit, threshold):
                     break
                 counts[n] += 1
 
-    results = np.where(counts > threshold)[0]
-    return results
+    # 找出所有符合条件的 n
+    results = cp.where(counts > threshold)[0]
+    return cp.asnumpy(results)  # 转回 CPU 进行输出
 
 if __name__ == "__main__":
     limit = 10**9
