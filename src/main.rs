@@ -1,5 +1,6 @@
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex}; // 引入线程安全的 Mutex 和 Arc
 
 fn main() {
     // 定义限制和阈值
@@ -10,8 +11,10 @@ fn main() {
     // 生成所有平方数
     let squares: Vec<usize> = (1..=max_square).map(|x| x * x).collect();
 
+    // 使用线程安全的 HashMap
+    let count_map = Arc::new(Mutex::new(HashMap::new()));
+
     // 使用并行迭代计算
-    let mut count_map = HashMap::new();
     squares.par_iter().for_each(|&a| {
         for &b in &squares {
             if b < a {
@@ -26,19 +29,21 @@ fn main() {
                     break;
                 }
 
-                // 使用原子操作更新 HashMap
-                let entry = count_map.entry(n).or_insert(0);
-                *entry += 1;
+                // 使用 Mutex 保护对 count_map 的访问
+                let mut map = count_map.lock().unwrap();
+                *map.entry(n).or_insert(0) += 1;
             }
         }
     });
 
     // 找出符合条件的 n
-    let results: Vec<_> = count_map
-        .into_iter()
-        .filter(|&(_, count)| count > threshold)
-        .map(|(n, _)| n)
-        .collect();
+    let results: Vec<_> = {
+        let map = count_map.lock().unwrap();
+        map.iter()
+            .filter(|&(_, &count)| count > threshold)
+            .map(|(&n, _)| n)
+            .collect()
+    };
 
     // 输出结果
     println!("找到 {} 个符合条件的数：", results.len());
