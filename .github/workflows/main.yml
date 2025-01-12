@@ -9,23 +9,25 @@ on:
 jobs:
   calculate:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
       - name: Install NVIDIA Drivers
         run: |
           sudo apt-get update
+          sudo apt-get install -y build-essential dkms
+          distribution=$(. /etc/os-release; echo $ID$VERSION_ID) && \
+          curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - && \
+          curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+          sudo apt-get update
           sudo apt-get install -y nvidia-driver-470
+          sudo reboot
 
       - name: Install Python dependencies
         run: |
-          pip install cupy tqdm
+          pip install cupy-cuda11x tqdm  # 安装支持 CUDA 的 cupy 预编译版本
 
       - name: Run the Python script
         run: python script.py
